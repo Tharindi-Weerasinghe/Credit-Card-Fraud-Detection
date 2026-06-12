@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cyber Fraud SOC Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Orbitron', sans-serif;
+    background: radial-gradient(ellipse at top, #050f24 0%, #000000 100%);
+    color: #cbd5e1;
+    min-height: 100vh;
+}
+
+/* ===== HEADER ===== */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    background: linear-gradient(90deg, #020917, #0c1a35);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.header-title {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #38bdf8;
+    text-transform: uppercase;
+}
+
+.header-title span {
+    color: #ef4444;
+    margin-right: 10px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ===== LAYOUT ===== */
+.main { padding: 20px 24px; }
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+/* ===== CARD ===== */
+.card {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.12);
+    border-radius: 12px;
+    padding: 18px 20px;
+    backdrop-filter: blur(10px);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.15);
+}
+
+.card-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #475569;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.card-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #38bdf8;
+    line-height: 1;
+}
+
+.card-sub {
+    font-size: 10px;
+    color: #475569;
+    margin-top: 6px;
+    letter-spacing: 1px;
+}
+
+/* ===== THREAT BADGE ===== */
+.threat-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-top: 8px;
+}
+
+.threat-LOW  { background: rgba(34,197,94,0.15);  color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+.threat-MEDIUM { background: rgba(234,179,8,0.15); color: #eab308; border: 1px solid rgba(234,179,8,0.3); }
+.threat-HIGH { background: rgba(239,68,68,0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+
+/* ===== METRICS ROW ===== */
+.metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.metric-mini {
+    background: rgba(15,23,42,0.6);
+    border: 1px solid rgba(56,189,248,0.1);
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: center;
+}
+
+.metric-mini-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #475569;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.metric-mini-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #a78bfa;
+}
+
+/* ===== SECTION TITLE ===== */
+.section-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #38bdf8;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(56,189,248,0.1);
+}
+
+/* ===== BUTTON ===== */
+.btn {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #0ea5e9, #2563eb);
+    color: white;
+    margin-top: 12px;
+}
+
+.btn-primary:hover { box-shadow: 0 0 16px rgba(56,189,248,0.5); transform: translateY(-1px); }
+.btn-primary:active { transform: scale(0.98); }
+
+/* ===== FILE INPUT ===== */
+.file-label {
+    display: block;
+    margin-top: 12px;
+    padding: 28px 16px;
+    border: 1px dashed rgba(56,189,248,0.3);
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    color: #475569;
+    font-size: 11px;
+    letter-spacing: 1px;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.file-label:hover { border-color: #38bdf8; color: #38bdf8; }
+
+#fileInput { display: none; }
+
+#file-name {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #22c55e;
+    text-align: center;
+    min-height: 16px;
+}
+
+/* ===== RESULT BOX ===== */
+.result-box {
+    margin-top: 14px;
+    padding: 14px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(56,189,248,0.08);
+    min-height: 60px;
+    font-size: 12px;
+}
+
+.result-label {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 3px;
+}
+
+.fraud { color: #ef4444; }
+.safe  { color: #22c55e; }
+
+.prob-bar-wrap {
+    margin-top: 10px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+}
+
+.prob-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+/* ===== CHART ===== */
+#chart { max-height: 200px; }
+
+/* ===== TABLE ===== */
+.table-wrap {
+    max-height: 280px;
+    overflow-y: auto;
+    margin-top: 10px;
+}
+
+.table-wrap::-webkit-scrollbar { width: 4px; }
+.table-wrap::-webkit-scrollbar-track { background: transparent; }
+.table-wrap::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.2); border-radius: 2px; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+thead { position: sticky; top: 0; background: #0a1628; z-index: 1; }
+
+th {
+    padding: 8px 10px;
+    text-align: left;
+    color: #38bdf8;
+    letter-spacing: 1px;
+    font-size: 10px;
+    border-bottom: 1px solid rgba(56,189,248,0.15);
+}
+
+td {
+    padding: 7px 10px;
+    border-bottom: 1px solid rgba(30,41,59,0.8);
+    color: #94a3b8;
+}
+
+tr:hover td { background: rgba(56,189,248,0.04); }
+
+/* ===== ALERTS TABLE ===== */
+.alert-row td:first-child { color: #ef4444; font-weight: 600; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+    text-align: center;
+    padding: 30px 16px;
+    color: #334155;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+/* ===== PROGRESS ===== */
+.upload-progress {
+    display: none;
+    margin-top: 10px;
+}
+
+.progress-bar-wrap {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    height: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #0ea5e9, #22c55e);
+    width: 0%;
+    border-radius: 4px;
+    transition: width 1s ease;
+}
+
+.progress-text {
+    font-size: 10px;
+    color: #38bdf8;
+    margin-top: 6px;
+    letter-spacing: 1px;
+}
+
+/* ===== TOAST ===== */
+#toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 12px 20px;
+    background: rgba(15,23,42,0.95);
+    border: 1px solid rgba(56,189,248,0.3);
+    border-radius: 8px;
+    font-size: 12px;
+    color: #38bdf8;
+    letter-spacing: 1px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    z-index: 999;
+    pointer-events: none;
+}
+
+#toast.show { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="header-title">
+        <span>&#9632;</span> Cyber Fraud Detection — SOC Dashboard
+    </div>
+    <div class="header-right">
+        <span><span class="status-dot"></span>SYSTEM ONLINE</span>
+        <span id="clock">--:--:--</span>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- STATS ROW -->
+    <div class="grid-3">
+        <div class="card">
+            <div class="card-label">Total Transactions</div>
+            <div class="card-value" id="total">0</div>
+            <div class="card-sub">ANALYZED THIS SESSION</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Fraud Detected</div>
+            <div class="card-value" style="color:#ef4444;" id="fraud">0</div>
+            <div class="card-sub">
+                THREAT LEVEL:
+                <span class="threat-badge threat-LOW" id="threat-badge">LOW</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-label">Legit Transactions</div>
+            <div class="card-value" style="color:#22c55e;" id="legit">0</div>
+            <div class="card-sub" id="fraud-rate-text">FRAUD RATE: 0.00%</div>
+        </div>
+    </div>
+
+    <!-- MODEL METRICS ROW (shown after first upload) -->
+    <div class="metrics-row" id="metrics-row" style="display:none;">
+        <div class="metric-mini">
+            <div class="metric-mini-label">Accuracy</div>
+            <div class="metric-mini-value" id="m-acc">—</div>
+        </div>
+        <div class="metric-mini">
+            <div class="metric-mini-label">Precision</div>
+            <div class="metric-mini-value" id="m-prec">—</div>
+        </div>
+        <div class="metric-mini">
+            <div class="metric-mini-label">Recall</div>
+            <div class="metric-mini-value" id="m-rec">—</div>
+        </div>
+        <div class="metric-mini">
+            <div class="metric-mini-label">F1 Score</div>
+            <div class="metric-mini-value" id="m-f1">—</div>
+        </div>
+    </div>
+
+    <!-- MAIN ACTION ROW -->
+    <div class="grid-3" style="margin-bottom:16px;">
+
+        <!-- LIVE PREDICTION -->
+        <div class="card">
+            <div class="section-title">Live Prediction</div>
+            <button class="btn btn-primary" onclick="predict()">&#9654; Run Demo Scan</button>
+            <div class="result-box" id="result">
+                <div class="empty-state">Press scan to run a demo prediction</div>
+            </div>
+        </div>
+
+        <!-- UPLOAD -->
+        <div class="card">
+            <div class="section-title">Upload Dataset</div>
+            <label class="file-label" for="fileInput">
+                &#8593; Drop or click to select CSV
+            </label>
+            <input type="file" id="fileInput" accept=".csv" onchange="onFileSelect()">
+            <div id="file-name"></div>
+            <div class="upload-progress" id="upload-progress">
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar" id="prog-bar"></div>
+                </div>
+                <div class="progress-text" id="prog-text">Scanning...</div>
+            </div>
+            <button class="btn btn-primary" onclick="upload()">&#9654; Analyze Dataset</button>
+        </div>
+
+        <!-- CHART -->
+        <div class="card">
+            <div class="section-title">Fraud Analytics</div>
+            <canvas id="chart"></canvas>
+        </div>
+
+    </div>
+
+    <!-- LOGS + ALERTS -->
+    <div class="grid-2">
+
+        <!-- SECURITY LOGS -->
+        <div class="card">
+            <div class="section-title">Security Logs</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Probability</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log">
+                        <tr><td colspan="4" class="empty-state">No logs yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TOP FRAUD ALERTS -->
+        <div class="card">
+            <div class="section-title">Top Fraud Alerts</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Transaction #</th>
+                            <th>Fraud Probability</th>
+                            <th>Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alerts-body">
+                        <tr><td colspan="3" class="empty-state">Upload a dataset to see alerts</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+
+/* ===== STATE ===== */
+let total = 0, fraud = 0, legit = 0;
+
+/* ===== CLOCK ===== */
+function updateClock() {
+    document.getElementById("clock").innerText =
+        new Date().toLocaleTimeString("en-US", { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ===== CHART ===== */
+const ctx = document.getElementById("chart").getContext("2d");
+const fraudChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+        labels: ["Fraud", "Legit"],
+        datasets: [{
+            data: [0, 1],
+            backgroundColor: ["#ef4444", "#22c55e"],
+            borderColor: ["#7f1d1d", "#14532d"],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        plugins: {
+            legend: {
+                labels: {
+                    color: "#94a3b8",
+                    font: { family: "Orbitron", size: 10 }
+                }
+            }
+        },
+        cutout: "65%"
+    }
+});
+
+/* ===== UPDATE CHART ===== */
+function updateChart() {
+    fraudChart.data.datasets[0].data = [fraud, legit];
+    fraudChart.update();
+}
+
+/* ===== UPDATE STATS ===== */
+function updateStats(f, l, fraudRate, threat) {
+    total = f + l;
+    fraud = f;
+    legit = l;
+    document.getElementById("total").innerText = total.toLocaleString();
+    document.getElementById("fraud").innerText = fraud.toLocaleString();
+    document.getElementById("legit").innerText = legit.toLocaleString();
+    document.getElementById("fraud-rate-text").innerText =
+        `FRAUD RATE: ${fraudRate !== undefined ? fraudRate : ((fraud/Math.max(total,1))*100).toFixed(2)}%`;
+
+    if (threat) {
+        const badge = document.getElementById("threat-badge");
+        badge.className = `threat-badge threat-${threat}`;
+        badge.innerText = threat;
+    }
+    updateChart();
+}
+
+/* ===== TOAST ===== */
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.innerText = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+/* ===== FILE SELECT ===== */
+function onFileSelect() {
+    const f = document.getElementById("fileInput").files[0];
+    document.getElementById("file-name").innerText = f ? `Selected: ${f.name}` : "";
+}
+
+/* ===== LIVE PREDICTION ===== */
+function predict() {
+    const btn = document.querySelector(".btn-primary");
+    btn.disabled = true;
+    btn.innerText = "Scanning...";
+
+    fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ features: Array(30).fill(0) })
+    })
+    .then(r => r.json())
+    .then(data => {
+
+        if (data.error) {
+            showToast("Error: " + data.error);
+            return;
+        }
+
+        const isFraud = data.label === "FRAUD";
+        const color = isFraud ? "#ef4444" : "#22c55e";
+
+        if (isFraud) fraud++;
+        else legit++;
+
+        updateStats(fraud, legit, undefined, undefined);
+
+        // Result box
+        document.getElementById("result").innerHTML = `
+            <div class="result-label ${isFraud ? 'fraud' : 'safe'}">${data.label}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:4px;letter-spacing:1px;">
+                PROBABILITY: ${data.probability}%
+            </div>
+            <div class="prob-bar-wrap">
+                <div class="prob-bar"
+                     style="width:${data.probability}%;background:${color};"></div>
+            </div>
+        `;
+
+        // Add to log table
+        const ts = data.timestamp || new Date().toLocaleTimeString("en-US", { hour12: false });
+        const logBody = document.getElementById("log");
+        const existingEmpty = logBody.querySelector(".empty-state");
+        if (existingEmpty) logBody.innerHTML = "";
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td style="color:#475569;">${total}</td>
+            <td>${ts}</td>
+            <td class="${isFraud ? 'fraud' : 'safe'}">${data.label}</td>
+            <td>${data.probability}%</td>
+        `;
+        logBody.prepend(row);
+
+        showToast(`Scan complete — ${data.label}`);
+
+    })
+    .catch(err => showToast("Connection error"))
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerText = "\u25b6 Run Demo Scan";
+    });
+}
+
+/* ===== CSV UPLOAD ===== */
+function upload() {
+    const file = document.getElementById("fileInput").files[0];
+
+    if (!file) {
+        showToast("Select a CSV file first");
+        return;
+    }
+
+    // Show progress
+    const prog = document.getElementById("upload-progress");
+    const bar = document.getElementById("prog-bar");
+    const progText = document.getElementById("prog-text");
+    prog.style.display = "block";
+
+    let pct = 0;
+    const tick = setInterval(() => {
+        pct = Math.min(pct + Math.random() * 12, 85);
+        bar.style.width = pct + "%";
+        progText.innerText = `Scanning... ${Math.round(pct)}%`;
+    }, 200);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/upload", { method: "POST", body: formData })
+    .then(r => r.json())
+    .then(data => {
+        clearInterval(tick);
+        bar.style.width = "100%";
+        progText.innerText = "Scan complete!";
+
+        setTimeout(() => { prog.style.display = "none"; bar.style.width = "0%"; }, 1500);
+
+        if (data.error) {
+            showToast("Error: " + data.error);
+            return;
+        }
+
+        // Update stats
+        updateStats(data.fraud, data.legit, data.fraud_rate, data.threat);
+
+        // Show model metrics
+        if (data.accuracy) {
+            document.getElementById("metrics-row").style.display = "grid";
+            document.getElementById("m-acc").innerText  = data.accuracy;
+            document.getElementById("m-prec").innerText = data.precision;
+            document.getElementById("m-rec").innerText  = data.recall;
+            document.getElementById("m-f1").innerText   = data.f1;
+        }
+
+        // Populate security logs
+        if (data.logs && data.logs.length > 0) {
+            const logBody = document.getElementById("log");
+            logBody.innerHTML = "";
+            data.logs.forEach(entry => {
+                const isFraud = entry.status === "FRAUD";
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td style="color:#475569;">${entry.transaction}</td>
+                    <td>${entry.timestamp || "—"}</td>
+                    <td class="${isFraud ? 'fraud' : 'safe'}">${entry.status}</td>
+                    <td>${entry.probability}%</td>
+                `;
+                logBody.appendChild(row);
+            });
+        }
+
+        // Populate top fraud alerts
+        if (data.alerts && data.alerts.length > 0) {
+            const alertsBody = document.getElementById("alerts-body");
+            alertsBody.innerHTML = "";
+            data.alerts.forEach(alert => {
+                const risk = alert.probability > 80 ? "CRITICAL"
+                           : alert.probability > 60 ? "HIGH" : "MEDIUM";
+                const riskColor = alert.probability > 80 ? "#ef4444"
+                                : alert.probability > 60 ? "#f97316" : "#eab308";
+                const row = document.createElement("tr");
+                row.className = "alert-row";
+                row.innerHTML = `
+                    <td>#${alert.transaction}</td>
+                    <td class="fraud">${alert.probability}%</td>
+                    <td style="color:${riskColor};font-size:10px;letter-spacing:1px;">${risk}</td>
+                `;
+                alertsBody.appendChild(row);
+            });
+        }
+
+        showToast(`Dataset scanned — ${data.total.toLocaleString()} transactions`);
+    })
+    .catch(err => {
+        clearInterval(tick);
+        showToast("Upload failed — check your connection");
+        prog.style.display = "none";
+    });
+}
+
+</script>
+</body>
+</html>
